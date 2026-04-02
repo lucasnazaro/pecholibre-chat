@@ -90,7 +90,7 @@
         }
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(8px); }
-            to   { opacity: 1; transform: translateY(0); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .bubble.user {
             align-self: flex-end;
@@ -214,14 +214,8 @@
 <div class="chat-area" id="ca"></div>
 
 <div class="input-area">
-    <input
-        type="text"
-        id="mi"
-        placeholder="Contame qué sentís..."
-        autocomplete="off"
-        onkeydown="if(event.key==='Enter')send()"
-    >
-    <button class="send-btn" id="btn" onclick="send()">
+    <input type="text" id="mi" placeholder="Contame que sentis..." autocomplete="off">
+    <button class="send-btn" id="btn">
         <svg viewBox="0 0 24 24" width="18" height="18" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
         </svg>
@@ -229,73 +223,102 @@
 </div>
 
 <script>
-    const API = '/functions/chat';
-    let H = [];
-    let loading = false;
-    let ebookShown = false;
+var API = '/functions/chat';
+var H = [];
+var loading = false;
+var ebookShown = false;
 
-    window.onload = () => {
-        addBotBubble("Hola, soy el asistente de Lucas. ¿Qué estás sintiendo en este momento?");
-    };
+function addBotBubble(text) {
+    var ca = document.getElementById('ca');
+    var div = document.createElement('div');
+    div.className = 'bubble bot';
+    div.innerHTML = text.replace(/\n/g, '<br>');
+    ca.appendChild(div);
+    ca.scrollTop = ca.scrollHeight;
+}
 
-    function addBotBubble(text) {
-        const ca = document.getElementById('ca');
-        const div = document.createElement('div');
-        div.className = 'bubble bot';
-        div.innerHTML = text.replace(/\n/g, '<br>');
-        ca.appendChild(div);
-        ca.scrollTop = ca.scrollHeight;
-    }
+function addUserBubble(text) {
+    var ca = document.getElementById('ca');
+    var div = document.createElement('div');
+    div.className = 'bubble user';
+    div.innerText = text;
+    ca.appendChild(div);
+    ca.scrollTop = ca.scrollHeight;
+}
 
-    function addUserBubble(text) {
-        const ca = document.getElementById('ca');
-        const div = document.createElement('div');
-        div.className = 'bubble user';
-        div.innerText = text;
-        ca.appendChild(div);
-        ca.scrollTop = ca.scrollHeight;
-    }
+function showTyping() {
+    var ca = document.getElementById('ca');
+    var div = document.createElement('div');
+    div.className = 'typing';
+    div.id = 'typing';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    ca.appendChild(div);
+    ca.scrollTop = ca.scrollHeight;
+}
 
-    function showTyping() {
-        const ca = document.getElementById('ca');
-        const div = document.createElement('div');
-        div.className = 'typing';
-        div.id = 'typing';
-        div.innerHTML = '<span></span><span></span><span></span>';
-        ca.appendChild(div);
-        ca.scrollTop = ca.scrollHeight;
-    }
+function hideTyping() {
+    var t = document.getElementById('typing');
+    if (t) t.remove();
+}
 
-    function hideTyping() {
-        const t = document.getElementById('typing');
-        if (t) t.remove();
-    }
+function showEbookCard() {
+    var ca = document.getElementById('ca');
+    var card = document.createElement('div');
+    card.className = 'ebook-card';
+    card.innerHTML = '<strong>Protocolo: Liberar el Pecho</strong><p>Apaga la alarma corporal en 7 minutos. Tecnica probada de respiracion consciente y acupresion.</p><a href="https://lucasnazaro27.hotmart.host/pecho-libre" target="_blank" class="ebook-btn">Ver el Ebook</a>';
+    ca.appendChild(card);
+    ca.scrollTop = ca.scrollHeight;
+}
 
-    function showEbookCard() {
-        const ca = document.getElementById('ca');
-        const card = document.createElement('div');
-        card.className = 'ebook-card';
-        card.innerHTML = `
-            <strong>📖 Protocolo: Liberar el Pecho</strong>
-            <p>Apagá la alarma corporal en 7 minutos. Técnica probada de respiración consciente y acupresión.</p>
-            <a href="https://lucasnazaro27.hotmart.host/pecho-libre" target="_blank" class="ebook-btn">Ver el Ebook →</a>
-        `;
-        ca.appendChild(card);
-        ca.scrollTop = ca.scrollHeight;
-    }
+function send() {
+    var input = document.getElementById('mi');
+    var btn = document.getElementById('btn');
+    var text = input.value.trim();
+    if (!text || loading) return;
+    input.value = '';
+    loading = true;
+    btn.disabled = true;
+    addUserBubble(text);
+    showTyping();
+    fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: H })
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        hideTyping();
+        if (data.reply) {
+            addBotBubble(data.reply);
+            H.push({ role: 'user', parts: [{ text: text }] });
+            H.push({ role: 'model', parts: [{ text: data.reply }] });
+            if (!ebookShown && data.reply.toLowerCase().indexOf('7 minutos') !== -1) {
+                ebookShown = true;
+                setTimeout(showEbookCard, 900);
+            }
+        } else if (data.error) {
+            addBotBubble('Lo siento, hubo un problema: ' + data.error);
+        } else {
+            addBotBubble('No pude procesar eso. Me repetis?');
+        }
+    })
+    .catch(function() {
+        hideTyping();
+        addBotBubble('Hubo un error de conexion. Revisa tu senal e intenta de nuevo.');
+    })
+    .finally(function() {
+        loading = false;
+        btn.disabled = false;
+        document.getElementById('mi').focus();
+    });
+}
 
-    async function send() {
-        const input = document.getElementById('mi');
-        const btn = document.getElementById('btn');
-        const text = input.value.trim();
-        if (!text || loading) return;
+document.getElementById('btn').addEventListener('click', send);
+document.getElementById('mi').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') send();
+});
 
-        input.value = '';
-        loading = true;
-        btn.disabled = true;
-
-        addUserBubble(text);
-        showTyping();
-
-        try {
-            const response = await fetch(API, {
+addBotBubble('Hola, soy el asistente de Lucas. Que estas sintiendo en este momento?');
+</script>
+</body>
+</html>
