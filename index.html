@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Lucas · Pecho Libre — Asistente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #F5F0E8;
+            --warm: #C8B89A;
+            --text: #1A1410;
+            --text-muted: #7A6E65;
+            --accent: #2D5A4B;
+            --accent-light: #3D7A65;
+            --border: rgba(90, 70, 50, 0.12);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--cream);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header {
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            box-shadow: 0 2px 12px rgba(45,90,75,0.08);
+        }
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+        .header-name {
+            font-family: 'Fraunces', serif;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .header-status {
+            font-size: 11px;
+            color: #4CAF50;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.85); }
+        }
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-behavior: smooth;
+        }
+        .chat-area::-webkit-scrollbar { width: 4px; }
+        .chat-area::-webkit-scrollbar-thumb { background: var(--warm); border-radius: 2px; }
+        .bubble {
+            max-width: 82%;
+            padding: 11px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.55;
+            animation: fadeUp 0.25s ease-out both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .bubble.user {
+            align-self: flex-end;
+            background: var(--accent);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+        .bubble.bot {
+            align-self: flex-start;
+            background: #fff;
+            color: var(--text);
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .typing {
+            align-self: flex-start;
+            background: #fff;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            padding: 14px 18px;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            animation: fadeUp 0.2s ease-out both;
+        }
+        .typing span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--warm);
+            animation: bounce 1.2s ease-in-out infinite;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.15s; }
+        .typing span:nth-child(3) { animation-delay: 0.30s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+            40% { transform: translateY(-5px); opacity: 1; }
+        }
+        .ebook-card {
+            align-self: flex-start;
+            background: linear-gradient(135deg, #2D5A4B, #1a3d31);
+            border-radius: 16px;
+            padding: 16px 18px;
+            color: #fff;
+            max-width: 82%;
+            animation: fadeUp 0.3s ease-out both;
+            box-shadow: 0 4px 16px rgba(45,90,75,0.3);
+        }
+        .ebook-card strong {
+            font-family: 'Fraunces', serif;
+            font-size: 15px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .ebook-card p { font-size: 13px; opacity: 0.85; line-height: 1.45; }
+        .ebook-btn {
+            display: inline-block;
+            background: #fff;
+            color: var(--accent);
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 12px;
+            font-size: 12px;
+        }
+        .input-area {
+            background: #fff;
+            border-top: 1px solid var(--border);
+            padding: 12px 14px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .input-area input {
+            flex: 1;
+            border: 1.5px solid var(--border);
+            border-radius: 25px;
+            padding: 10px 18px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            background: var(--cream);
+            color: var(--text);
+            transition: border-color 0.2s;
+        }
+        .input-area input:focus { border-color: var(--accent); }
+        .input-area input::placeholder { color: var(--text-muted); }
+        .send-btn {
+            background: var(--accent);
+            border: none;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .send-btn:hover { background: var(--accent-light); }
+        .send-btn:active { transform: scale(0.93); }
+        .send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="avatar">🫁</div>
+    <div>
+        <div class="header-name">Lucas · Pecho Libre</div>
+        <div class="header-status">
+            <span class="status-dot"></span>
+            DISPONIBLE AHORA
+        </div>
+    </div>
+</div>
+
+<div class="chat-area" id="ca"></div>
+
+<div class="input-area">
+    <input
+        type="text"
+        id="mi"
+        placeholder="Contame qué sentís..."
+        autocomplete="off"
+        onkeydown="if(event.key==='Enter')send()"
+    >
+    <button class="send-btn" id="btn" onclick="send()">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+    </button>
+</div>
+
+<script>
+    const API = '/functions/chat';
+    let H = [];
+    let loading = false;
+    let ebookShown = false;
+
+    window.onload = () => {
+        addBotBubble("Hola, soy el asistente de Lucas. ¿Qué estás sintiendo en este momento?");
+    };
+
+    function addBotBubble(text) {
+        const ca = document.getElementById('ca');
+        const div = document.createElement('div');
+        div.className = 'bubble bot';
+        div.innerHTML = text.replace(/\n/g, '<br>');
+        ca.appendChild(div);
+        ca.scrollTop = ca.scrollHeight;
+    }
+
+    function addUserBubble(text) {
+        const ca = document.getElementById('ca');
+        const div = document.createElement('div');
+        div.className = 'bubble user';
+        div.innerText = text;
+        ca.appendChild(div);
+        ca.scrollTop = ca.scrollHeight;
+    }
+
+    function showTyping() {
+        const ca = document.getElementById('ca');
+        const div = document.createElement('div');
+        div.className = 'typing';
+        div.id = 'typing';
+        div.innerHTML = '<span></span><span></span><span></span>';
+        ca.appendChild(div);
+        ca.scrollTop = ca.scrollHeight;
+    }
+
+    function hideTyping() {
+        const t = document.getElementById('typing');
+        if (t) t.remove();
+    }
+
+    function showEbookCard() {
+        const ca = document.getElementById('ca');
+        const card = document.createElement('div');
+        card.className = 'ebook-card';
+        card.innerHTML = `
+            <strong>📖 Protocolo: Liberar el Pecho</strong>
+            <p>Apagá la alarma corporal en 7 minutos. Técnica probada de respiración consciente y acupresión.</p>
+            <a href="https://lucasnazaro27.hotmart.host/pecho-libre" target="_blank" class="ebook-btn">Ver el Ebook →</a>
+        `;
+        ca.appendChild(card);
+        ca.scrollTop = ca.scrollHeight;
+    }
+
+    async function send() {
+        const input = document.getElementById('mi');
+        const btn = document.getElementById('btn');
+        const text = input.value.trim();
+        if (!text || loading) return;
+
+        input.value = '';
+        loading = true;
+        btn.disabled = true;
+
+        addUserBubble(text);
+        showTyping();
+
+        try {
+            const response = await fetch(API, {
