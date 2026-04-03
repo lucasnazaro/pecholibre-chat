@@ -2,22 +2,17 @@ export async function onRequestPost(context) {
   const GEMINI_KEY = context.env.GEMINI_API_KEY;
 
   if (!GEMINI_KEY) {
-    return new Response(JSON.stringify({ error: "Falta la clave en Cloudflare" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Falta la clave GEMINI_API_KEY en Cloudflare" }), { status: 500 });
   }
 
   let body;
   try {
     body = await context.request.json();
   } catch (e) {
-    return new Response(JSON.stringify({ error: "Error en el cuerpo del mensaje" }), { status: 400 });
+    return new Response(JSON.stringify({ error: "Error en el formato del mensaje" }), { status: 400 });
   }
 
-  // Si por algún motivo el historial llega vacío, le damos un inicio
-  const history = (body.history && body.history.length > 0) 
-    ? body.history 
-    : [{ role: "user", parts: [{ text: "Hola" }] }];
-
-  const systemInstruction = "Sos el asistente de Lucas Nazaro de @pecholibre. Hablás en vos rioplatense. Tu misión es validar el síntoma de opresión en el pecho como una activación del sistema nervioso y ofrecer calma. Si es oportuno, mencioná el protocolo de 7 minutos del ebook.";
+  const history = body.history || [];
 
   try {
     const response = await fetch(
@@ -26,12 +21,14 @@ export async function onRequestPost(context) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemInstruction }] },
+          system_instruction: { 
+            parts: [{ text: "Sos el asistente de Lucas Nazaro de @pecholibre. Hablás en vos rioplatense. Validás síntomas de opresión en el pecho como activación nerviosa y ofrecés calma. Si es oportuno, mencioná el protocolo de 7 minutos." }] 
+          },
           contents: history.map(item => ({
             role: item.role === 'model' ? 'model' : 'user',
             parts: [{ text: item.parts[0].text }]
           })),
-          generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
+          generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
         })
       }
     );
@@ -42,7 +39,7 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: data.error.message }), { status: 500 });
     }
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No pude procesar tu mensaje. ¿Me lo repetís?";
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No pude procesar eso, ¿me repetís?";
 
     return new Response(JSON.stringify({ reply }), {
       headers: { "Content-Type": "application/json" }
