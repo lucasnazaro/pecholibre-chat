@@ -2,7 +2,7 @@ export async function onRequestPost(context) {
   const GEMINI_KEY = context.env.GEMINI_API_KEY;
 
   if (!GEMINI_KEY) {
-    return new Response(JSON.stringify({ error: "Falta la clave GEMINI_API_KEY en Cloudflare" }), { 
+    return new Response(JSON.stringify({ error: "Falta la clave GEMINI_API_KEY" }), { 
       status: 500, headers: { "Content-Type": "application/json" } 
     });
   }
@@ -14,11 +14,20 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({ error: "Error en el formato del mensaje" }), { status: 400 });
   }
 
-  const history = body.history || [];
+  // ACEPTAR DIFERENTES FORMATOS
+  let history = body.history || [];
+  const mensajeDirecto = body.message || body.text || body.content;
   
-  // Verificá si el historial está vacío (primer mensaje)
+  // Si hay mensaje directo pero no historial, crearlo
+  if (history.length === 0 && mensajeDirecto) {
+    history = [{ role: "user", content: mensajeDirecto }];
+  }
+  
+  // Si SIGUE vacío, responder mensaje de bienvenida
   if (history.length === 0) {
-    return new Response(JSON.stringify({ error: "El historial está vacío" }), { status: 400 });
+    return new Response(JSON.stringify({ 
+      reply: "Hola, soy el asistente de Lucas. ¿Qué estás sintiendo en este momento? Contame..." 
+    }), { headers: { "Content-Type": "application/json" } });
   }
 
   const MODEL_NAME = "gemini-1.5-flash-8b"; 
@@ -27,9 +36,7 @@ export async function onRequestPost(context) {
   const systemInstruction = "Sos el asistente de Lucas Nazaro de @pecholibre. Hablás en vos rioplatense. Validás síntomas de opresión en el pecho como activación nerviosa y ofrecés calma. Si es oportuno, mencioná el protocolo de 7 minutos del ebook.";
 
   try {
-    // Convertir el historial al formato que espera Gemini
     const formattedContents = history.map(item => {
-      // Extraer el texto del mensaje (manejar diferentes formatos)
       let text = "";
       if (typeof item === 'string') {
         text = item;
@@ -37,28 +44,16 @@ export async function onRequestPost(context) {
         text = item.content;
       } else if (item.text) {
         text = item.text;
-      } else if (item.parts && item.parts[0] && item.parts[0].text) {
+      } else if (item.parts?.[0]?.text) {
         text = item.parts[0].text;
       }
       
-      // Convertir roles: 'assistant' (frontend) → 'model' (Gemini)
       let role = item.role || 'user';
       if (role === 'assistant') role = 'model';
       if (role !== 'user' && role !== 'model') role = 'user';
       
-      return {
-        role: role,
-        parts: [{ text: text }]
-      };
+      return { role, parts: [{ text }] };
     });
-
-    // Agregar el mensaje actual si viene por separado
-    // (asumiendo que el último mensaje es el del usuario)
-    const lastMessage = formattedContents[formattedContents.length - 1];
-    if (lastMessage.role !== 'user') {
-      // Si el último no es de usuario, algo anda mal
-      console.warn("El último mensaje no es del usuario");
-    }
 
     const response = await fetch(API_URL, {
       method: "POST",
@@ -73,7 +68,6 @@ export async function onRequestPost(context) {
     const data = await response.json();
 
     if (data.error) {
-      console.error("Error de Gemini:", data.error);
       return new Response(JSON.stringify({ error: data.error.message }), { 
         status: 500, headers: { "Content-Type": "application/json" } 
       });
@@ -86,7 +80,6 @@ export async function onRequestPost(context) {
     });
 
   } catch (err) {
-    console.error("Error de conexión:", err);
     return new Response(JSON.stringify({ error: "Error de conexión: " + err.message }), { status: 500 });
   }
 }
