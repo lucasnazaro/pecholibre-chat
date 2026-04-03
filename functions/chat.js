@@ -2,7 +2,7 @@ export async function onRequestPost(context) {
   const GEMINI_KEY = context.env.GEMINI_API_KEY;
 
   if (!GEMINI_KEY) {
-    return new Response(JSON.stringify({ error: "Falta la clave GEMINI_API_KEY" }), { 
+    return new Response(JSON.stringify({ error: "Falta la clave GEMINI_API_KEY en Cloudflare" }), { 
       status: 500, headers: { "Content-Type": "application/json" } 
     });
   }
@@ -14,24 +14,22 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({ error: "Error en el formato del mensaje" }), { status: 400 });
   }
 
-  // ACEPTAR DIFERENTES FORMATOS
+  // ✅ NOMBRE CORREGIDO
+  const MODEL_NAME = "gemini-1.5-flash-8b-001";  // Versión estable
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_KEY}`;
+
   let history = body.history || [];
   const mensajeDirecto = body.message || body.text || body.content;
   
-  // Si hay mensaje directo pero no historial, crearlo
   if (history.length === 0 && mensajeDirecto) {
     history = [{ role: "user", content: mensajeDirecto }];
   }
   
-  // Si SIGUE vacío, responder mensaje de bienvenida
   if (history.length === 0) {
     return new Response(JSON.stringify({ 
       reply: "Hola, soy el asistente de Lucas. ¿Qué estás sintiendo en este momento? Contame..." 
     }), { headers: { "Content-Type": "application/json" } });
   }
-
-  const MODEL_NAME = "gemini-1.5-flash-8b"; 
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_KEY}`;
 
   const systemInstruction = "Sos el asistente de Lucas Nazaro de @pecholibre. Hablás en vos rioplatense. Validás síntomas de opresión en el pecho como activación nerviosa y ofrecés calma. Si es oportuno, mencioná el protocolo de 7 minutos del ebook.";
 
@@ -61,13 +59,14 @@ export async function onRequestPost(context) {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: formattedContents,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
+        generationConfig: { temperature: 0.7, maxOutputTokens:400 }
       })
     });
 
     const data = await response.json();
 
     if (data.error) {
+      console.error("Error de Gemini:", data.error);
       return new Response(JSON.stringify({ error: data.error.message }), { 
         status: 500, headers: { "Content-Type": "application/json" } 
       });
@@ -80,6 +79,7 @@ export async function onRequestPost(context) {
     });
 
   } catch (err) {
+    console.error("Error de conexión:", err);
     return new Response(JSON.stringify({ error: "Error de conexión: " + err.message }), { status: 500 });
   }
 }
