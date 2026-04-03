@@ -15,7 +15,7 @@ export async function onRequestPost(context) {
   }
 
   // ✅ MODELO GEMINI 2.0 FLASH LITE (más cuota gratuita)
-  const MODEL_NAME = "gemini-2.0-flash-lite";
+  const MODEL_NAME = "gemini-1.5-flash";
   const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_KEY}`;
 
   // Manejar diferentes formatos de entrada
