@@ -14,8 +14,8 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({ error: "Error en el formato del mensaje" }), { status: 400 });
   }
 
-  // ✅ NOMBRE CORREGIDO
-  const MODEL_NAME = "gemini-1.5-flash-8b-001";  // Versión estable
+  // ✅ MODELO ACTUALIZADO
+  const MODEL_NAME = "gemini-2.0-flash";
   const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_KEY}`;
 
   let history = body.history || [];
@@ -59,7 +59,7 @@ export async function onRequestPost(context) {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: formattedContents,
-        generationConfig: { temperature: 0.7, maxOutputTokens:400 }
+        generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
       })
     });
 
